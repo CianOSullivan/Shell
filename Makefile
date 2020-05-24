@@ -1,4 +1,4 @@
 all: compile
 
 compile: 
-	gcc -Wall main.c -o shell
+	gcc -Wall -g main.c -o shell
