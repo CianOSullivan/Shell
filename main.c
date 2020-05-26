@@ -4,10 +4,7 @@
 #include <string.h> // Used by strtok
 #include <unistd.h> // Used by fork
 #include <sys/wait.h> // waitpid and its macros
-
-#define BUFSIZE 1024
-#define ARGSBUFSIZE 64
-#define DELIMS " \t\r\n\a"
+#include "config.h"
 
 int cd(char** args);
 int help(char** args);
@@ -34,13 +31,19 @@ int num_builtins() {
 */
 int cd(char **args)
 {
-  if (args[1] == NULL) {
-    fprintf(stderr, "lsh: expected argument to \"cd\"\n");
-  } else {
-    if (chdir(args[1]) != 0) {
-      perror("lsh");
+    char cwd[1000];
+    if (args[1] == NULL) {
+        // Print the error to stderr
+        fprintf(stderr, "csh: argument missing\n");
+    } else {
+        // Attempt to change directory
+        if (chdir(args[1]) != 0) {
+            // If unsucessful, print the error message
+            perror("csh");
+        } else {
+            printf("Current Directory: %s", getcwd(cwd, sizeof(cwd)));
+        }
     }
-  }
   return 1;
 }
 
@@ -114,17 +117,19 @@ int launch(char** args) {
 
     childID = fork();
     if (childID == 0) {
-        printf("Fork successful");
+        // Fork successful
         if (execvp(args[0], args) == -1) {
             printf("LS");
         }
     } else if (childID < 0) {
-        printf("Fork unsuccessful");
+        // Fork unsucessful
+        perror("csh");
     } else {
         do {
             parentID = waitpid(childID, &status, WUNTRACED);
+            // Wait until process is exited or killed
         }
-        while (!WIFEXITED(status) && !WIFEXITED(status));
+        while (!WIFSIGNALED(status) && !WIFEXITED(status));
     }
 
     return 1;
@@ -145,7 +150,7 @@ bool execute(char** arguments) {
     return launch(arguments);
 }
 
-void loop() {
+int main(int argc, char **argv) {
     bool running = true;
     char* line;
     char** arguments;
@@ -155,16 +160,10 @@ void loop() {
         line = readline();
         arguments = splitlines(line);
         running = execute(arguments);
-        printf("String entered: %s\n", line);
 
         free(line);
         free(arguments);
     }
-
-}
-
-int main(int argc, char **argv) {
-    loop();
     return 0;
 
 }
