@@ -5,62 +5,8 @@
 #include <unistd.h> // Used by fork
 #include <sys/wait.h> // waitpid and its macros
 #include "config.h"
+#include "builtins.h"
 
-int cd(char** args);
-int help(char** args);
-int shell_exit(char** args);
-
-char *builtin_str[] = {
-  "cd",
-  "help",
-  "exit"
-};
-
-int (*builtin_func[]) (char **) = {
-  &cd,
-  &help,
-  &shell_exit
-};
-
-int num_builtins() {
-    return sizeof(builtin_str) / sizeof(char *);
-}
-
-/*
-  Builtin function implementations.
-*/
-int cd(char **args)
-{
-    char cwd[1000];
-    if (args[1] == NULL) {
-        // Print the error to stderr
-        fprintf(stderr, "csh: argument missing\n");
-    } else {
-        // Attempt to change directory
-        if (chdir(args[1]) != 0) {
-            // If unsucessful, print the error message
-            perror("csh");
-        } else {
-            printf("Current Directory: %s", getcwd(cwd, sizeof(cwd)));
-        }
-    }
-  return 1;
-}
-
-int shell_exit(char** args)
-{
-  return 0;
-}
-
-int help(char** args){
-    printf("Possible programs are available: \n");
-
-    for (int i = 0; i < num_builtins(); i++) {
-        printf("    %s\n", builtin_str[i]);
-    }
-
-    return 1;
-}
 
 char* readline() {
     int bufSize = BUFSIZE;
@@ -140,15 +86,12 @@ bool execute(char** arguments) {
     if (arguments[0] == NULL) {
         return 1;
     }
-
-    for (int i = 0; i < num_builtins(); i++) {
-        if (strcmp(arguments[0], builtin_str[i]) == 0) {
-            return (*builtin_func[i])(arguments);
-        }
+    if (check_builtin(arguments)) {
+        return run_builtin(arguments);
     }
-
     return launch(arguments);
 }
+
 
 int main(int argc, char **argv) {
     bool running = true;
@@ -160,7 +103,6 @@ int main(int argc, char **argv) {
         line = readline();
         arguments = splitlines(line);
         running = execute(arguments);
-
         free(line);
         free(arguments);
     }
