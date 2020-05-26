@@ -33,7 +33,6 @@ int num_builtins() {
 */
 int cd(char **args)
 {
-    char cwd[1000];
     if (args[1] == NULL) {
         // Print the error to stderr
         fprintf(stderr, "csh: argument missing\n");
@@ -42,8 +41,6 @@ int cd(char **args)
         if (chdir(args[1]) != 0) {
             // If unsucessful, print the error message
             perror("csh");
-        } else {
-            printf("Current Directory: %s", getcwd(cwd, sizeof(cwd)));
         }
     }
   return 1;

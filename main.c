@@ -7,6 +7,21 @@
 #include "config.h"
 #include "builtins.h"
 
+char *replace_str(char *str, char *orig, char *rep)
+{
+  static char buffer[4096];
+  char *p;
+
+  if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
+    return str;
+
+  strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
+  buffer[p-str] = '\0';
+
+  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+  return buffer;
+}
 
 char* readline() {
     int bufSize = BUFSIZE;
@@ -58,22 +73,22 @@ char** splitlines(char* line) {
 
 int launch(char** args) {
     pid_t childID;
-    pid_t parentID;
     int status;
 
     childID = fork();
     if (childID == 0) {
-        // Fork successful
+        // This is run by the child if the fork is successful
         if (execvp(args[0], args) == -1) {
-            printf("LS");
+            perror("csh");
         }
+        // The child then exits when it is finished
+        exit(0);
     } else if (childID < 0) {
         // Fork unsucessful
         perror("csh");
     } else {
         do {
-            parentID = waitpid(childID, &status, WUNTRACED);
-            // Wait until process is exited or killed
+            waitpid(childID, &status, WUNTRACED);
         }
         while (!WIFSIGNALED(status) && !WIFEXITED(status));
     }
@@ -97,12 +112,25 @@ int main(int argc, char **argv) {
     bool running = true;
     char* line;
     char** arguments;
+    char* buffer[100];
+    int bufferSize = 0;
 
     while (running) {
-        printf("> ");
+        char* cwd = getcwd(NULL, 0);
+        if (strstr(cwd, HOME) != NULL) {
+            cwd = replace_str(cwd, HOME, "~");
+        }
+
+        printf("%s:%s> ", HOSTNAME, cwd);
         line = readline();
+        // Make a history file which the shell uses
+        buffer[bufferSize++] = strdup(line);
         arguments = splitlines(line);
         running = execute(arguments);
+        for (int i = 0; i < bufferSize; i++) {
+            printf("%s", buffer[i]);
+        }
+        printf("%i", bufferSize);
         free(line);
         free(arguments);
     }
