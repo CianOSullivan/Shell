@@ -27,7 +27,7 @@ char* readline() {
     int bufSize = BUFSIZE;
     int position = 0;
     char* buffer = malloc(sizeof(char) * bufSize);
-    char c;
+    int c;
 
     while (true) {
         c = getchar();
@@ -38,7 +38,6 @@ char* readline() {
         } else {
             buffer[position++] = c;
         }
-
         if (position >= bufSize) {
             bufSize += BUFSIZE;
             buffer = realloc(buffer, bufSize);
@@ -82,7 +81,7 @@ int launch(char** args) {
             perror("csh");
         }
         // The child then exits when it is finished
-        exit(0);
+        exit(1);
     } else if (childID < 0) {
         // Fork unsucessful
         perror("csh");
@@ -107,13 +106,63 @@ bool execute(char** arguments) {
     return launch(arguments);
 }
 
+void write_history(char* line) {
+    // Open the file for read and append, make if it does not exist
+    FILE *history = fopen("hist","a+");
+    int count = 0;
+    char *buffer = NULL;
+
+    // Count the number of lines in the file
+    for (char c = getc(history); c != EOF; c = getc(history)) {
+        // Increment count if this character is newline
+        if (c == '\n') {
+            count = count + 1;
+        }
+    }
+
+    if (count >= HISTLEN) {
+        if (fseek(history, 0L, SEEK_END) == 0) {
+            /* Get the size of the file. */
+            long bufsize = ftell(history);
+            if (bufsize == -1) { /* Error */ }
+
+            /* Allocate our buffer to that size. */
+            buffer = malloc(sizeof(char) * (bufsize + 1));
+
+            /* Go back to the start of the file. */
+            if (fseek(history, 0L, SEEK_SET) != 0) { /* Error */ }
+
+            /* Read the entire file into memory. */
+            size_t newLen = fread(buffer, sizeof(char), bufsize, history);
+            if ( ferror( history ) != 0 ) {
+                fputs("Error reading file", stderr);
+            } else {
+                buffer[newLen++] = '\0'; /* Just to be safe. */
+            }
+        }
+
+        fclose(history);
+
+        char *token = strtok(buffer, "\n"); // Split the first line
+        token = strtok(NULL, "\n"); // Start adding tokens from second line
+
+        // Overwrite file without first line
+        history = fopen("hist","w");
+        while (token != NULL) {
+            fprintf(history, "%s\n", token);
+            token = strtok(NULL, "\n");
+        }
+    }
+
+    fprintf(history, "%s\n", line);
+    fclose(history);
+}
 
 int main(int argc, char **argv) {
     bool running = true;
     char* line;
     char** arguments;
-    char* buffer[100];
-    int bufferSize = 0;
+
 
     while (running) {
         char* cwd = getcwd(NULL, 0);
@@ -124,13 +173,11 @@ int main(int argc, char **argv) {
         printf("%s:%s> ", HOSTNAME, cwd);
         line = readline();
         // Make a history file which the shell uses
-        buffer[bufferSize++] = strdup(line);
+        write_history(line);
         arguments = splitlines(line);
+
         running = execute(arguments);
-        for (int i = 0; i < bufferSize; i++) {
-            printf("%s", buffer[i]);
-        }
-        printf("%i", bufferSize);
+
         free(line);
         free(arguments);
     }
