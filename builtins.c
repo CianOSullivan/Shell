@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h> // Used by fork
+#include <ncurses.h>
 
 
 char *builtin_str[] = {
@@ -35,7 +36,7 @@ int cd(char **args)
 {
     if (args[1] == NULL) {
         // Print the error to stderr
-        fprintf(stderr, "csh: argument missing\n");
+        printf("csh: argument missing\n");
     } else {
         // Attempt to change directory
         if (chdir(args[1]) != 0) {
@@ -52,10 +53,10 @@ int shell_exit(char** args)
 }
 
 int help(char** args){
-    printf("Possible programs are available: \n");
+    printw("Possible programs are available: \n");
 
     for (int i = 0; i < num_builtins(); i++) {
-        printf("    %s\n", builtin_str[i]);
+        printw("    %s\n", builtin_str[i]);
     }
 
     return 1;

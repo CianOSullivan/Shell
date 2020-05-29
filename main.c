@@ -4,6 +4,7 @@
 #include <string.h> // Used by strtok
 #include <unistd.h> // Used by fork
 #include <sys/wait.h> // waitpid and its macros
+#include <ncurses.h>
 #include "config.h"
 #include "builtins.h"
 
@@ -28,9 +29,8 @@ char* readline() {
     int position = 0;
     char* buffer = malloc(sizeof(char) * bufSize);
     int c;
-
     while (true) {
-        c = getchar();
+        c = getch();
 
         if (c == EOF || c == '\n') {
             buffer[position] = '\0';
@@ -43,7 +43,6 @@ char* readline() {
             buffer = realloc(buffer, bufSize);
         }
     }
-
     return buffer;
 }
 
@@ -163,14 +162,14 @@ int main(int argc, char **argv) {
     char* line;
     char** arguments;
 
-
+    initscr();
     while (running) {
         char* cwd = getcwd(NULL, 0);
         if (strstr(cwd, HOME) != NULL) {
             cwd = replace_str(cwd, HOME, "~");
         }
 
-        printf("%s:%s> ", HOSTNAME, cwd);
+        wprintw("%s:%s> ", HOSTNAME, cwd);
         line = readline();
         // Make a history file which the shell uses
         write_history(line);
@@ -181,6 +180,7 @@ int main(int argc, char **argv) {
         free(line);
         free(arguments);
     }
+    endwin();
     return 0;
 
 }
