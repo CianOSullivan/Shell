@@ -4,6 +4,8 @@
 #include <string.h> // Used by strtok
 #include <unistd.h> // Used by fork
 #include <sys/wait.h> // waitpid and its macros
+#include <termios.h>
+#include <fcntl.h>
 #include "config.h"
 #include "builtins.h"
 
@@ -27,23 +29,49 @@ char* readline() {
     int bufSize = BUFSIZE;
     int position = 0;
     char* buffer = malloc(sizeof(char) * bufSize);
-    int c;
+    char c;
+    struct termios oldt, newt;
+    int oldf;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
     while (true) {
         c = getchar();
 
-        if (c == EOF || c == '\n') {
+        if (c == '\033') {
+            printf("Arrow Key");
+        } else if (c == EOF || c == '\n') {
             buffer[position] = '\0';
-            return buffer;
-        } else {
-            buffer[position++] = c;
-        }
-        if (position >= bufSize) {
-            bufSize += BUFSIZE;
-            buffer = realloc(buffer, bufSize);
-        }
+            //return buffer;
+        } else if(c == -1) // by default the function returns -1, as it is non blocking
+        {
+            continue;
+
+        }else
+        {
+            break;
+        }//else {
+        //    buffer[position++] = c;
+        //}
+//
+        //      if (position >= bufSize) {
+        //  bufSize += BUFSIZE;
+        //  buffer = realloc(buffer, bufSize);
+        //}
     }
 
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+    if(c != '\n')
+    {
+        ungetc(c,stdin);
+        putchar(c);
+        scanf("%s",buffer);
+    }
     return buffer;
 }
 
@@ -52,9 +80,8 @@ char** splitlines(char* line) {
     int position = 0;
     char** arguments = malloc(sizeof(char*) * bufSize);
     char* argument;
-
+    printf("%s", line);
     argument = strtok(line, DELIMS);
-
     while (argument != NULL) {
         arguments[position++] = argument;
 
@@ -172,6 +199,7 @@ int main(int argc, char **argv) {
 
         printf("%s:%s> ", HOSTNAME, cwd);
         line = readline();
+        printf("%s", line);
         // Make a history file which the shell uses
         write_history(line);
         arguments = splitlines(line);
