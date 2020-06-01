@@ -164,19 +164,20 @@ int main(int argc, char **argv) {
 
     initscr();
     while (running) {
+        refresh();
         char* cwd = getcwd(NULL, 0);
         if (strstr(cwd, HOME) != NULL) {
             cwd = replace_str(cwd, HOME, "~");
         }
 
-        wprintw("%s:%s> ", HOSTNAME, cwd);
+        printw("%s:%s> ", HOSTNAME, cwd);
         line = readline();
         // Make a history file which the shell uses
         write_history(line);
         arguments = splitlines(line);
 
         running = execute(arguments);
-
+        //printw("\n");
         free(line);
         free(arguments);
     }

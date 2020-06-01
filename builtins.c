@@ -36,7 +36,7 @@ int cd(char **args)
 {
     if (args[1] == NULL) {
         // Print the error to stderr
-        printf("csh: argument missing\n");
+        printw("csh: argument missing\n");
     } else {
         // Attempt to change directory
         if (chdir(args[1]) != 0) {
