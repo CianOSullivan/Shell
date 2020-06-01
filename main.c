@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
     char* line;
     char** arguments;
 
-
+    char* HOME = getenv("HOME");
     while (running) {
         char* cwd = getcwd(NULL, 0);
         if (strstr(cwd, HOME) != NULL) {

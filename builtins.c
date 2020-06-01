@@ -11,11 +11,6 @@ char *builtin_str[] = {
   "exit"
 };
 
-
-int cd(char** args);
-int help(char** args);
-int shell_exit(char** args);
-
 int (*builtin_func[]) (char **) = {
   &cd,
   &help,
