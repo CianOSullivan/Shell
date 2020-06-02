@@ -6,6 +6,7 @@
 #include <sys/wait.h> // waitpid and its macros
 #include "config.h"
 #include "builtins.h"
+#include "aliases.h"
 
 char *replace_str(char *str, char *orig, char *rep)
 {
@@ -100,6 +101,9 @@ bool execute(char** arguments) {
     if (arguments[0] == NULL) {
         return 1;
     }
+
+    char** alias = check_alias(arguments);
+
     if (check_builtin(arguments)) {
         return run_builtin(arguments);
     }
