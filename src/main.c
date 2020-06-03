@@ -14,7 +14,7 @@
 Print the colour red
  */
 void red () {
-    printf("\033[1;31m");
+    printf("\033[0;31m");
 }
 
 /**
@@ -40,61 +40,52 @@ void print_prompt(char* cwd) {
     printf("%s", cwd);
     white();
     printf("> ");
-//printf("%s:%s> ", HOSTNAME, cwd);
-
 }
 
 void handler(int sig) {
-  void *array[10];
-  size_t size;
+    void *array[10];
+    size_t size;
 
-  // get void*'s for all entries on the stack
-  size = backtrace(array, 10);
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 10);
 
-  // print out all the frames to stderr
-  fprintf(stderr, "Error: signal %d:\n", sig);
-  backtrace_symbols_fd(array, size, STDERR_FILENO);
-  exit(1);
+    // print out all the frames to stderr
+    fprintf(stderr, "Error: signal %d:\n", sig);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    exit(1);
 }
 
 char *replace_str(char *str, char *orig, char *rep)
 {
-  static char buffer[4096];
-  char *p;
+    static char buffer[4096];
+    char *p;
 
-  if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
-    return str;
+    if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
+        return str;
 
-  strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
-  buffer[p-str] = '\0';
+    strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
+    buffer[p-str] = '\0';
 
-  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+    sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
 
-  return buffer;
+    return buffer;
 }
 
 char* readline() {
-    int bufSize = BUFSIZE;
-    int position = 0;
-    char* buffer = malloc(sizeof(char) * bufSize);
-    int c;
+    char *line = NULL;
+    size_t bufsize = 0; // have getline allocate a buffer for us
 
-    while (true) {
-        c = getchar();
-
-        if (c == EOF || c == '\n') {
-            buffer[position] = '\0';
-            return buffer;
-        } else {
-            buffer[position++] = c;
-        }
-        if (position >= bufSize) {
-            bufSize += BUFSIZE;
-            buffer = realloc(buffer, bufSize);
+    if (getline(&line, &bufsize, stdin) == -1){
+        if (feof(stdin)) {
+            exit(EXIT_SUCCESS);  // We recieved an EOF
+        } else  {
+            perror("readline");
+            exit(EXIT_FAILURE);
         }
     }
 
-    return buffer;
+    return line;
+
 }
 
 char** splitlines(char* line) {
@@ -145,16 +136,30 @@ int launch(char** args) {
     return 1;
 }
 
+int count_args(char** args) {
+    int count = 0;
+    while (*args) {
+        count++;
+        args++;
+    }
+    return count;
+}
+
 bool execute(char** arguments) {
     // Execute
     if (arguments[0] == NULL) {
         return 1;
     }
-
-    char** alias = check_alias(arguments);
-    printf("Got alias: ");
-    printf("%s\n", alias[0]);
+    int argc = count_args(arguments);
+    char** alias = malloc(sizeof(char*) * argc);
+    alias = check_alias(argc, arguments);
+    //printf("Got alias: ");
+    //printf("%s\n", alias[0]);
     if (alias) {
+        for (int i = 0; i < argc; i++) {
+            printf("%s", alias[i]);
+        }
+        printf("\n");
         if (check_builtin(alias)) {
             return run_builtin(alias);
         }

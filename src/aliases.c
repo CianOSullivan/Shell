@@ -10,12 +10,13 @@ bool run_regex(char* command, char* line) {
     int reti;
     char* start = "alias\\s(";
     char* end = ")\\=";
-
+    //printf("%s", command);
     char* expression = (char*) malloc (1 + strlen(start) + strlen(command) + strlen(end));
     strcpy(expression, start);
     strcat(expression, command);
     strcat(expression, end);
 
+    //printf("expression: %s", expression);
     reti = regcomp(&regex, expression, REG_EXTENDED);
     reti = regexec(&regex, line, 0, NULL, 0);
     regfree(&regex);
@@ -40,7 +41,8 @@ char* get_brackets(char* line) {
     return subString;
 }
 
-char** check_alias(char** args) {
+
+char** check_alias(int argc, char** args) {
     char* alias;
     char* line = NULL;
     size_t len = 0;
@@ -60,12 +62,18 @@ char** check_alias(char** args) {
         bool match = run_regex(args[0], line);
         if (match) {
             alias = get_brackets(line);
-            //printf("Alias: %s\n", alias);
 
             // change arg[0] to alias
             modified_args[0] = malloc(sizeof(char) * strlen(alias));
             strcpy(modified_args[0], alias);
+            // Need to add space between args
+            for (int i = 1; i < argc; i++) {
+                modified_args[i] = malloc(sizeof(char) * strlen(args[i]) + 1);
+                sprintf(modified_args[i], " %s", args[i]); // Add a space at the start of the argument
+            }
+
             fclose(aliases);
+            perror("alias");
             return modified_args;
         }
     }
