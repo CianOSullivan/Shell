@@ -4,9 +4,58 @@
 #include <string.h> // Used by strtok
 #include <unistd.h> // Used by fork
 #include <sys/wait.h> // waitpid and its macros
+#include <signal.h>
+#include <execinfo.h>
 #include "config.h"
 #include "builtins.h"
 #include "aliases.h"
+
+/**
+Print the colour red
+ */
+void red () {
+    printf("\033[1;31m");
+}
+
+/**
+Print the colour white
+ */
+void white() {
+    printf("\033[0m");
+}
+
+/**
+Print the colour green
+ */
+void green() {
+    printf("\033[0;32m");
+}
+
+void print_prompt(char* cwd) {
+    red();
+    printf("%s", HOSTNAME);
+    white();
+    printf(":");
+    green();
+    printf("%s", cwd);
+    white();
+    printf("> ");
+//printf("%s:%s> ", HOSTNAME, cwd);
+
+}
+
+void handler(int sig) {
+  void *array[10];
+  size_t size;
+
+  // get void*'s for all entries on the stack
+  size = backtrace(array, 10);
+
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+  backtrace_symbols_fd(array, size, STDERR_FILENO);
+  exit(1);
+}
 
 char *replace_str(char *str, char *orig, char *rep)
 {
@@ -79,7 +128,7 @@ int launch(char** args) {
     if (childID == 0) {
         // This is run by the child if the fork is successful
         if (execvp(args[0], args) == -1) {
-            perror("csh");
+            fprintf(stderr, "csh: Couldn't execute %s\n", args[0]);
         }
         // The child then exits when it is finished
         exit(1);
@@ -103,7 +152,14 @@ bool execute(char** arguments) {
     }
 
     char** alias = check_alias(arguments);
-
+    printf("Got alias: ");
+    printf("%s\n", alias[0]);
+    if (alias) {
+        if (check_builtin(alias)) {
+            return run_builtin(alias);
+        }
+        return launch(alias);
+    }
     if (check_builtin(arguments)) {
         return run_builtin(arguments);
     }
@@ -168,13 +224,13 @@ int main(int argc, char **argv) {
     char** arguments;
 
     char* HOME = getenv("HOME");
+    signal(SIGSEGV, handler);   // install our handler
     while (running) {
         char* cwd = getcwd(NULL, 0);
         if (strstr(cwd, HOME) != NULL) {
             cwd = replace_str(cwd, HOME, "~");
         }
-
-        printf("%s:%s> ", HOSTNAME, cwd);
+        print_prompt(cwd);
         line = readline();
         // Make a history file which the shell uses
         write_history(line);
