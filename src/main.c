@@ -119,7 +119,7 @@ int launch(char** args) {
     if (childID == 0) {
         // This is run by the child if the fork is successful
         if (execvp(args[0], args) == -1) {
-            fprintf(stderr, "csh: Couldn't execute %s\n", args[0]);
+            fprintf(stderr, "csh: command not found: %s\n", args[0]);
         }
         // The child then exits when it is finished
         exit(1);
@@ -127,6 +127,8 @@ int launch(char** args) {
         // Fork unsucessful
         perror("csh");
     } else {
+        //fprintf(stderr, "Executed %s\n", args[0]);
+
         do {
             waitpid(childID, &status, WUNTRACED);
         }

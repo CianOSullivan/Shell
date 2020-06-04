@@ -47,6 +47,7 @@ char** check_alias(int argc, char** args) {
     char* line = NULL;
     size_t len = 0;
     char** modified_args = malloc(sizeof(char *));
+    int start_argument = 0;
 
     // open file
     FILE *aliases = fopen("src/aliases","r");
@@ -62,14 +63,22 @@ char** check_alias(int argc, char** args) {
         bool match = run_regex(args[0], line);
         if (match) {
             alias = get_brackets(line);
+            char * pch;
 
+            pch = strtok (alias," ");
+            while (pch != NULL)
+            {
+                modified_args[start_argument] = malloc(sizeof(char) * strlen(alias));
+                strcpy(modified_args[start_argument++], pch);
+                pch = strtok(NULL, " ");
+            }
             // change arg[0] to alias
-            modified_args[0] = malloc(sizeof(char) * strlen(alias));
-            strcpy(modified_args[0], alias);
+            //modified_args[0] = malloc(sizeof(char) * strlen(alias));
+            //strcpy(modified_args[0], alias);
             // Need to add space between args
             for (int i = 1; i < argc; i++) {
-                modified_args[i] = malloc(sizeof(char) * strlen(args[i]) + 1);
-                sprintf(modified_args[i], " %s", args[i]); // Add a space at the start of the argument
+                modified_args[start_argument + i] = malloc(sizeof(char) * strlen(args[i]) + 1);
+                sprintf(modified_args[start_argument + i], " %s", args[i]); // Add a space at the start of the argument
             }
 
             fclose(aliases);
