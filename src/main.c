@@ -152,25 +152,23 @@ bool execute(char** arguments) {
     if (arguments[0] == NULL) {
         return 1;
     }
-    int argc = count_args(arguments);
-    char** alias = malloc(sizeof(char*) * argc);
-    alias = check_alias(argc, arguments);
-    //printf("Got alias: ");
-    //printf("%s\n", alias[0]);
-    if (alias) {
-        for (int i = 0; i < argc; i++) {
-            printf("%s", alias[i]);
-        }
-        printf("\n");
-        if (check_builtin(alias)) {
-            return run_builtin(alias);
-        }
-        return launch(alias);
-    }
+
     if (check_builtin(arguments)) {
         return run_builtin(arguments);
     }
     return launch(arguments);
+}
+
+char** find_alias(char** arguments) {
+    int argc = count_args(arguments);
+
+    char** alias = malloc(sizeof(char*) * argc);
+
+    alias = check_alias(argc, arguments);
+    if (alias) {
+        return alias;
+    }
+    return arguments;
 }
 
 void write_history(char* line) {
@@ -242,7 +240,7 @@ int main(int argc, char **argv) {
         // Make a history file which the shell uses
         write_history(line);
         arguments = splitlines(line);
-
+        arguments = find_alias(arguments);
         running = execute(arguments);
 
         free(line);

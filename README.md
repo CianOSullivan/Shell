@@ -21,3 +21,15 @@ The shell will then be executing! The shell can be run through a terminal emulat
 ```
 urxvt -e /path/to/csh-executable
 ```
+
+# TODO
+ - Piping
+ - Compound arguments e.g:
+   ```
+   ls -a -l    # This works
+   ls -al      # This doesn't work
+   ```
+ - Globbing
+ - Escape Characters
+ - Autocompletion using TAB
+ - Command history retrieval using arrow keys (may require reimplementation using ncurses)
