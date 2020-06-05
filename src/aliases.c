@@ -56,11 +56,11 @@ char** check_alias(int argc, char** args) {
 
     // open file
     FILE *aliases = fopen("/home/cian/code/Shell/src/aliases","r");
-    if(aliases == NULL)
-    {
+    if(aliases == NULL) {
         fprintf(stderr, "csh: Couldn't open aliases file\n");
         return args;
     }
+
     // Compare args[0] against all aliases
     while ((getline(&line, &len, aliases)) != -1) {
         //printf("%s\n", line);
@@ -75,28 +75,17 @@ char** check_alias(int argc, char** args) {
             {
                 modified_args[start_argument] = malloc(sizeof(char) * strlen(alias));
                 strcpy(modified_args[start_argument++], pch);
-                //sprintf(modified_args[start_argument++], "%s", pch);
                 pch = strtok(NULL, " ");
             }
 
-            // change arg[0] to alias
-            //modified_args[0] = malloc(sizeof(char) * strlen(alias));
-            //strcpy(modified_args[0], alias);
-            // Need to add space between args
-            //printf("Already in: %i\n", start_argument);
-            //printf("Args: %i\n", argc);
+            int newStart = start_argument; // The point at which to start adding args
 
-            for (int i = start_argument; i < start_argument - 1 + argc; i++) {
-                //printf("Adding at pos: %i", i);
-                //printf("Addom this: %s", args[i-1]);
-                modified_args[i] = malloc(sizeof(char) * strlen(args[i-1]) + 1);
-                sprintf(modified_args[i], "%s", args[i-1]); // Add a space at the start of the argument
+            // Add the old arguments into the new alias argument list
+            for (int i = 1; i < start_argument - 1 + argc; i++) {
+                modified_args[newStart++] = args[i];
             }
-            for (int i = 0; i < start_argument + argc; i++) {
-                //printf("Command: %s ", modified_args[i]);
-            }
+
             fclose(aliases);
-            perror("alias");
             return modified_args;
         }
     }
