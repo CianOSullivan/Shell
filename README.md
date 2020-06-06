@@ -24,11 +24,6 @@ urxvt -e /path/to/csh-executable
 
 # TODO
  - Piping
- - Compound arguments e.g:
-   ```
-   ls -a -l    # This works
-   ls -al      # This doesn't work
-   ```
  - Globbing
  - Escape Characters
  - Autocompletion using TAB

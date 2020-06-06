@@ -1,9 +1,4 @@
 #include "aliases.h"
-#include <stdio.h>
-#include <regex.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
 
 bool run_regex(char* command, char* line) {
     regex_t regex;
@@ -42,7 +37,7 @@ char* get_brackets(char* line) {
 }
 
 
-char** check_alias(int argc, char** args) {
+char** check_alias(int argc, char** args, char* location) {
     char* alias;
     char* line = NULL;
     size_t len = 0;
@@ -55,10 +50,9 @@ char** check_alias(int argc, char** args) {
     }
 
     // open file
-    FILE *aliases = fopen("/home/cian/code/Shell/src/aliases","r");
+    FILE *aliases = fopen(location, "r+");
     if(aliases == NULL) {
-        fprintf(stderr, "csh: Couldn't open aliases file\n");
-        return args;
+        return NULL;
     }
 
     // Compare args[0] against all aliases

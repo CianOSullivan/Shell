@@ -9,7 +9,7 @@
 #include "config.h"
 #include "builtins.h"
 #include "aliases.h"
-
+//extern char* HOME;
 /**
 Print the colour red
  */
@@ -159,21 +159,20 @@ bool execute(char** arguments) {
     return launch(arguments);
 }
 
-char** find_alias(char** arguments) {
+char** find_alias(char** arguments, char* location) {
     int argc = count_args(arguments);
 
     char** alias = malloc(sizeof(char*) * argc);
-
-    alias = check_alias(argc, arguments);
+    alias = check_alias(argc, arguments, location);
     if (alias) {
         return alias;
     }
     return arguments;
 }
 
-void write_history(char* line) {
+void write_history(char* line, char* location) {
     // Open the file for read and append, make if it does not exist
-    FILE *history = fopen("hist","a+");
+    FILE *history = fopen(location,"a+");
     int count = 0;
     char *buffer = NULL;
 
@@ -219,7 +218,7 @@ void write_history(char* line) {
         }
     }
 
-    fprintf(history, "%s\n", line);
+    fprintf(history, "%s", line);
     fclose(history);
 }
 
@@ -229,6 +228,12 @@ int main(int argc, char **argv) {
     char** arguments;
 
     char* HOME = getenv("HOME");
+    char* alias_location = strdup(HOME);
+    char* hist_location = strdup(HOME);
+    strcat(alias_location, "/.aliases");
+    strcat(hist_location, "/.hist");
+
+
     signal(SIGSEGV, handler);   // install our handler
     while (running) {
         char* cwd = getcwd(NULL, 0);
@@ -238,9 +243,9 @@ int main(int argc, char **argv) {
         print_prompt(cwd);
         line = readline();
         // Make a history file which the shell uses
-        write_history(line);
+        write_history(line, hist_location);
         arguments = splitlines(line);
-        arguments = find_alias(arguments);
+        arguments = find_alias(arguments, alias_location);
         running = execute(arguments);
 
         free(line);
