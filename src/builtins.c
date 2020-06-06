@@ -1,38 +1,36 @@
 #include "builtins.h"
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h> // Used by fork
-#include <stdlib.h>
 
-
+/**
+   The names of the builtin functions.
+*/
 char *builtin_str[] = {
   "cd",
   "help",
   "exit"
 };
 
+/**
+   The builtin function pointers.
+*/
 int (*builtin_func[]) (char **) = {
   &cd,
   &help,
   &shell_exit
 };
 
+/**
+   The number of builtin functions.
+
+   @returns the number of builtin functions
+*/
 int num_builtins() {
     return sizeof(builtin_str) / sizeof(char *);
 }
 
-
-
-/*
-  Builtin function implementations.
-*/
 int cd(char **args)
 {
     if (args[1] == NULL) {
-        // Print the error to stderr
-        //fprintf(stderr, "csh: argument missing\n");
-
+        // Change to $HOME
         char* HOME = getenv("HOME");
         if (chdir(HOME) != 0) {
             // If unsucessful, print the error message
@@ -40,7 +38,7 @@ int cd(char **args)
         }
 
     } else {
-        // Attempt to change directory
+        // Attempt to change directory using given argument
         if (chdir(args[1]) != 0) {
             // If unsucessful, print the error message
             perror("csh");
@@ -57,6 +55,7 @@ int shell_exit(char** args)
 int help(char** args){
     printf("Possible programs are available: \n");
 
+    // Iterate through and print the list of builtins
     for (int i = 0; i < num_builtins(); i++) {
         printf("    %s\n", builtin_str[i]);
     }

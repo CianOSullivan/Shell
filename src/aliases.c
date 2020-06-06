@@ -1,29 +1,42 @@
 #include "aliases.h"
 
+/**
+   Checks if the alias of the current line matches the command.
+
+   @returns true if the command has an alias which exists for it, false otherwise
+   @param command the command which is being checked for in the alias line
+   @param line the current line in the alias file
+*/
 bool run_regex(char* command, char* line) {
     regex_t regex;
     int reti;
     char* start = "alias\\s(";
     char* end = ")\\=";
-    //printf("%s", command);
     char* expression = (char*) malloc (1 + strlen(start) + strlen(command) + strlen(end));
+
+    // Set the regex to the combined expression
     strcpy(expression, start);
-    strcat(expression, command);
+    strcat(expression, command); // Add command to middle of regex
     strcat(expression, end);
 
-    //printf("expression: %s", expression);
+    // Compile regex and execute it on the current line
     reti = regcomp(&regex, expression, REG_EXTENDED);
     reti = regexec(&regex, line, 0, NULL, 0);
     regfree(&regex);
-    if( !reti ){
+
+    // Return true if the line is a match for the current command
+    if(!reti){
         return true;
     }
     return false;
 }
 
 /**
-Get the contents of the brackets of the alias
- */
+   Get the contents of the brackets of the alias.
+
+   @returns the contents of the brackets of the alias
+   @param line the current line in the alias file
+*/
 char* get_brackets(char* line) {
     char lineCopy[strlen(line)];  // where we will put a copy of the input
     char* subString; // the "result"
@@ -36,56 +49,75 @@ char* get_brackets(char* line) {
     return subString;
 }
 
+/**
+   Make the argument list using the alias in the current line
+
+   @returns the modified argument list containing the alias
+   @param argc the number of arguments in the original argument list
+   @param args the original list of arguments
+   @param line the current line in the alias file
+ */
+char** make_arg_list(int argc, char** args, char* line) {
+    int start_argument = 0;   // The position in args which the the alias stops at
+    char* alias;              // The alias for args[0]
+    // Compare args[0] against alias of current line
+
+    char** modified_args = malloc(sizeof(char *) * 100); // The argument list containing the alias
+    char* pch; // The character pointer of the tokenized brackets
+
+    // Get the contents of the brackets and tokenize it
+    alias = get_brackets(line);
+    pch = strtok(alias, " ");
+
+    // Add alias to modified_args
+    while (pch != NULL) {
+        modified_args[start_argument] = malloc(sizeof(char) * strlen(alias));
+        strcpy(modified_args[start_argument++], pch);
+        pch = strtok(NULL, " ");
+    }
+
+    int newStart = start_argument; // The point at which to start adding args
+
+    // Add the old arguments into the new alias argument list
+    for (int i = 1; i < start_argument - 1 + argc; i++) {
+        modified_args[newStart++] = args[i];
+    }
+
+    // Return the arguments
+    return modified_args;
+}
 
 char** check_alias(int argc, char** args, char* location) {
-    char* alias;
-    char* line = NULL;
-    size_t len = 0;
-    char** modified_args = malloc(sizeof(char *) * 100);
-    int start_argument = 0;
+    char* line = NULL;        // The current line of the file
+    size_t len;               // The length of the getline return
 
-    if (argc > 1024) {
+    // Don't parse
+    if (argc > 100) {
         printf("Too many arguments");
         return NULL;
     }
 
-    // open file
+    // Open aliases file
     FILE *aliases = fopen(location, "r+");
+
+    // File not found
     if(aliases == NULL) {
         return NULL;
     }
 
-    // Compare args[0] against all aliases
+    // Iterate through aliases file
     while ((getline(&line, &len, aliases)) != -1) {
-        //printf("%s\n", line);
+        // Check if the alias on the current line matches the command
         bool match = run_regex(args[0], line);
+
+        // If an alias exists for the command
         if (match) {
-            alias = get_brackets(line);
-            char * pch;
-
-            pch = strtok(alias, " ");
-            //add a space here
-            while (pch != NULL)
-            {
-                modified_args[start_argument] = malloc(sizeof(char) * strlen(alias));
-                strcpy(modified_args[start_argument++], pch);
-                pch = strtok(NULL, " ");
-            }
-
-            int newStart = start_argument; // The point at which to start adding args
-
-            // Add the old arguments into the new alias argument list
-            for (int i = 1; i < start_argument - 1 + argc; i++) {
-                modified_args[newStart++] = args[i];
-            }
-
             fclose(aliases);
-            return modified_args;
+            return make_arg_list(argc, args, line);
         }
     }
 
+    // Return NULL if no match found
     fclose(aliases);
-    free(modified_args);
-    //close file
     return NULL;
 }
