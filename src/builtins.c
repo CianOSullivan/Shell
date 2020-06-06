@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h> // Used by fork
+#include <stdlib.h>
 
 
 char *builtin_str[] = {
@@ -30,7 +31,14 @@ int cd(char **args)
 {
     if (args[1] == NULL) {
         // Print the error to stderr
-        fprintf(stderr, "csh: argument missing\n");
+        //fprintf(stderr, "csh: argument missing\n");
+
+        char* HOME = getenv("HOME");
+        if (chdir(HOME) != 0) {
+            // If unsucessful, print the error message
+            perror("csh");
+        }
+
     } else {
         // Attempt to change directory
         if (chdir(args[1]) != 0) {

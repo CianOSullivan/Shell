@@ -1,15 +1,15 @@
-#include <stdbool.h>
-#include <stdio.h>  // Used by printf and getchar()
-#include <stdlib.h> // Used by malloc
-#include <string.h> // Used by strtok
-#include <unistd.h> // Used by fork
-#include <sys/wait.h> // waitpid and its macros
-#include <signal.h>
-#include <execinfo.h>
-#include "config.h"
-#include "builtins.h"
-#include "aliases.h"
-//extern char* HOME;
+#include <stdbool.h>   // Allows use of boolean values
+#include <stdio.h>     // Used by printf and getchar()
+#include <stdlib.h>    // Used by malloc
+#include <string.h>    // Used by strtok
+#include <unistd.h>    // Used by fork
+#include <sys/wait.h>  // waitpid and its macros
+#include <signal.h>    // Used by backtracer
+#include <execinfo.h>  // Used by backtracer
+#include "config.h"    // CSH config values
+#include "builtins.h"  // Builtin commands
+#include "aliases.h"   // Used by alias parsing
+
 /**
 Print the colour red
  */
@@ -211,7 +211,7 @@ void write_history(char* line, char* location) {
         token = strtok(NULL, "\n"); // Start adding tokens from second line
 
         // Overwrite file without first line
-        history = fopen("hist","w");
+        history = fopen(location, "w");
         while (token != NULL) {
             fprintf(history, "%s\n", token);
             token = strtok(NULL, "\n");
