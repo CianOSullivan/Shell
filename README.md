@@ -22,6 +22,11 @@ The shell will then be executing! The shell can be run through a terminal emulat
 urxvt -e /path/to/csh-executable
 ```
 
+# Features
+ - Ability to execute commands and navigate filesystem
+ - Alias file which can be used to replace common commands
+ - History file which records all user input
+
 # TODO
  - Piping
  - Globbing

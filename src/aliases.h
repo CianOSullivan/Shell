@@ -7,14 +7,13 @@
 #include <stdbool.h>
 
 /**
-   Check if the alias exists for the current command and return the argument list with the alias
-   included if it is found in the alias file.
+   Check if an alias exists for the given command and return the modified argument list if one
+   exists.
 
-   @returns the modified args list if alias is found, NULL if not
-   @param argc the number of arguments in the char** pointer
-   @param args the list of command arguments
+   @returns the arguments with the alias if one exists for the given command
+   @param arguments the arguments to check for the containing alias
    @param location the location of the alias file
 */
-char** check_alias(int argc, char** args, char* location);
+char** find_alias(char** arguments, char* location);
 
  #endif

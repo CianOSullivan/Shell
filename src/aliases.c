@@ -1,6 +1,21 @@
 #include "aliases.h"
 
 /**
+   Count the number of arguments in the double pointer.
+
+   @returns the number of arguments in args
+   @param args the char** to count
+*/
+int count_args(char** args) {
+    int count = 0;
+    while (*args) {
+        count++;
+        args++;
+    }
+    return count;
+}
+
+/**
    Checks if the alias of the current line matches the command.
 
    @returns true if the command has an alias which exists for it, false otherwise
@@ -87,6 +102,15 @@ char** make_arg_list(int argc, char** args, char* line) {
     return modified_args;
 }
 
+/**
+   Check if the alias exists for the current command and return the argument list with the alias
+   included if it is found in the alias file.
+
+   @returns the modified args list if alias is found, NULL if not
+   @param argc the number of arguments in the char** pointer
+   @param args the list of command arguments
+   @param location the location of the alias file
+*/
 char** check_alias(int argc, char** args, char* location) {
     char* line = NULL;        // The current line of the file
     size_t len;               // The length of the getline return
@@ -120,4 +144,19 @@ char** check_alias(int argc, char** args, char* location) {
     // Return NULL if no match found
     fclose(aliases);
     return NULL;
+}
+
+char** find_alias(char** arguments, char* location) {
+    int argc = count_args(arguments);
+
+    char** alias = malloc(sizeof(char*) * argc);
+    alias = check_alias(argc, arguments, location);
+
+    // Return the alias if one exists for the given command
+    if (alias) {
+        return alias;
+    }
+
+    // Otherwise return the original argument list
+    return arguments;
 }

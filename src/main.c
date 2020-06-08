@@ -11,26 +11,31 @@
 #include "aliases.h"   // Used by alias parsing
 
 /**
-Print the colour red
- */
+   Print the colour red.
+*/
 void red () {
     printf("\033[0;31m");
 }
 
 /**
-Print the colour white
- */
+   Print the colour white.
+*/
 void white() {
     printf("\033[0m");
 }
 
 /**
-Print the colour green
- */
+   Print the colour green.
+*/
 void green() {
     printf("\033[0;32m");
 }
 
+/**
+   Print the prompt with the appropriate colours.
+
+   @param cwd the current working directory
+*/
 void print_prompt(char* cwd) {
     red();
     printf("%s", HOSTNAME);
@@ -42,6 +47,11 @@ void print_prompt(char* cwd) {
     printf("> ");
 }
 
+/**
+   Print a backtrace upon error signal and then exit.
+
+   @param sig the signal error code
+*/
 void handler(int sig) {
     void *array[10];
     size_t size;
@@ -49,45 +59,56 @@ void handler(int sig) {
     // get void*'s for all entries on the stack
     size = backtrace(array, 10);
 
-    // print out all the frames to stderr
-    fprintf(stderr, "Error: signal %d:\n", sig);
+    // print the backtrace to stderr
+    fprintf(stderr, "Error: signal %i\n", sig);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
 
-char *replace_str(char *str, char *orig, char *rep)
-{
-    static char buffer[4096];
-    char *p;
+/**
+   Replace the home section of the current working directory with ~.
 
-    if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
-        return str;
+   @param cwd the current working directory of csh
+   @param home the home directory of the user
+*/
+void replace_home(char* cwd, char* home) {
+    char* position = strstr(cwd, home);
 
-    strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
-    buffer[p-str] = '\0';
-
-    sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
-
-    return buffer;
+    // Check to_replace is in original
+    if (position) {
+        // If HOME exists in original, replace it with ~
+        sprintf(cwd, "%s%s", "~", position + strlen(home));
+    }
 }
 
+/**
+   Read the user input.
+
+   @returns the line of user input
+*/
 char* readline() {
-    char *line = NULL;
-    size_t bufsize = 0; // have getline allocate a buffer for us
+    char *line = NULL;  // The current input line
+    size_t bufsize = 0; // allows getline to allocate buffer
 
     if (getline(&line, &bufsize, stdin) == -1){
+        // Exit on end of file
         if (feof(stdin)) {
-            exit(EXIT_SUCCESS);  // We recieved an EOF
+            exit(EXIT_SUCCESS);
         } else  {
-            perror("readline");
+            perror("csh");
             exit(EXIT_FAILURE);
         }
     }
 
     return line;
-
 }
 
+/**
+   Split the given line into distinct arguments.
+
+   @returns the list of arguments
+   @param line the line of user input to split
+ */
 char** splitlines(char* line) {
     int bufSize = ARGSBUFSIZE;
     int position = 0;
@@ -111,6 +132,12 @@ char** splitlines(char* line) {
     return arguments;
 }
 
+/**
+   Launch the given command.
+
+   @returns the success status
+   @param args the list of arguments to execute
+*/
 int launch(char** args) {
     pid_t childID;
     int status;
@@ -127,8 +154,7 @@ int launch(char** args) {
         // Fork unsucessful
         perror("csh");
     } else {
-        //fprintf(stderr, "Executed %s\n", args[0]);
-
+        // Wait for child process to finish
         do {
             waitpid(childID, &status, WUNTRACED);
         }
@@ -138,38 +164,33 @@ int launch(char** args) {
     return 1;
 }
 
-int count_args(char** args) {
-    int count = 0;
-    while (*args) {
-        count++;
-        args++;
-    }
-    return count;
-}
+/**
+   Execute the given arguments.
 
+   @returns true if launched successfully, false otherwise
+   @param arguments the arguments to execute
+*/
 bool execute(char** arguments) {
-    // Execute
+    // Check if arguments is empty
     if (arguments[0] == NULL) {
         return 1;
     }
 
+    // If a builtin exists, run it
     if (check_builtin(arguments)) {
         return run_builtin(arguments);
     }
+
+    // Otherwise, fork a process
     return launch(arguments);
 }
 
-char** find_alias(char** arguments, char* location) {
-    int argc = count_args(arguments);
+/**
+   Write the last command to the history file.
 
-    char** alias = malloc(sizeof(char*) * argc);
-    alias = check_alias(argc, arguments, location);
-    if (alias) {
-        return alias;
-    }
-    return arguments;
-}
-
+   @param line the current line entered by the user
+   @param location the location of the history file
+*/
 void write_history(char* line, char* location) {
     // Open the file for read and append, make if it does not exist
     FILE *history = fopen(location,"a+");
@@ -222,35 +243,41 @@ void write_history(char* line, char* location) {
     fclose(history);
 }
 
+/**
+   The main loop of the shell and initialiser.
+*/
 int main(int argc, char **argv) {
-    bool running = true;
-    char* line;
-    char** arguments;
+    bool running = true;  // Whether the shell is running or not
+    char* line;           // The current line input into csh
+    char** arguments;     // The arguments to be executed
+    char* cwd;            // The current working directory of csh
 
+    // Get files required by csh
     char* HOME = getenv("HOME");
     char* alias_location = strdup(HOME);
     char* hist_location = strdup(HOME);
     strcat(alias_location, "/.aliases");
     strcat(hist_location, "/.hist");
 
-
-    signal(SIGSEGV, handler);   // install our handler
+    signal(SIGSEGV, handler);                              // Install backtracer
     while (running) {
-        char* cwd = getcwd(NULL, 0);
-        if (strstr(cwd, HOME) != NULL) {
-            cwd = replace_str(cwd, HOME, "~");
-        }
-        print_prompt(cwd);
-        line = readline();
-        // Make a history file which the shell uses
-        write_history(line, hist_location);
-        arguments = splitlines(line);
-        arguments = find_alias(arguments, alias_location);
-        running = execute(arguments);
+        // Format the current working directory
+        cwd = getcwd(NULL, 0);
+        //replace_string(cwd, HOME);
 
+        if (strstr(cwd, HOME) != NULL) {
+            replace_home(cwd, HOME);
+        }
+        print_prompt(cwd);                                 // Print the command line promp
+        line = readline();                                 // Get the user input
+        write_history(line, hist_location);                // Make a history file which the shell uses
+        arguments = splitlines(line);                      // Split the input into distinct arguments
+        arguments = find_alias(arguments, alias_location); // Check if an alias exists for the given command
+        running = execute(arguments);                      // Execute the input commands
+
+        // Free the last line and the input arguments
         free(line);
         free(arguments);
     }
     return 0;
-
 }
