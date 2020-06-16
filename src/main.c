@@ -247,19 +247,23 @@ void write_history(char* line, char* location) {
    The main loop of the shell and initialiser.
 */
 int main(int argc, char **argv) {
-    bool running = true;  // Whether the shell is running or not
-    char* line;           // The current line input into csh
-    char** arguments;     // The arguments to be executed
-    char* cwd;            // The current working directory of csh
+    bool running = true;       // Whether the shell is running or not
+    char* line;                // The current line input into csh
+    char** arguments;          // The arguments to be executed
+    char* cwd;                 // The current working directory of csh
+    signal(SIGSEGV, handler);  // Install backtracer
 
     // Get files required by csh
     char* HOME = getenv("HOME");
-    char* alias_location = strdup(HOME);
-    char* hist_location = strdup(HOME);
-    strcat(alias_location, "/.aliases");
-    strcat(hist_location, "/.hist");
 
-    signal(SIGSEGV, handler);                              // Install backtracer
+    char* alias_location = malloc(strlen(HOME) + 1 + 20);
+    strcpy(alias_location, HOME);
+    strcat(alias_location, "/.config/csh/aliases");
+
+    char* hist_location = malloc(strlen(HOME) + 1 + 17);
+    strcpy(hist_location, HOME);
+    strcat(hist_location, "/.config/csh/hist");
+
     while (running) {
         // Format the current working directory
         cwd = getcwd(NULL, 0);
