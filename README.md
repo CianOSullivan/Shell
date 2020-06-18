@@ -1,5 +1,6 @@
 # Shell
 ![C/C++ CI](https://github.com/CianOSullivan/Shell/workflows/C/C++%20CI/badge.svg)
+
 A Unix shell written in C.
 
 # Build Instructions
