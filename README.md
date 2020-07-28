@@ -24,6 +24,10 @@ The shell will then be executing! The shell can be run through a terminal emulat
 urxvt -e /path/to/csh-executable
 ```
 
+# Screenshots
+![Image of terminal](img/terminal.png)
+![Image of terminal busy](img/terminal-busy.png)
+
 # Features
  - Ability to execute commands and navigate filesystem
  - Alias file which can be used to replace common commands
