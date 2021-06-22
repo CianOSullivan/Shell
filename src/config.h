@@ -3,3 +3,4 @@
 #define BUFSIZE 1024
 #define ARGSBUFSIZE 64
 #define DELIMS " \t\r\n\a"
+#define CONFIG_LOC "/.config/cian/csh"

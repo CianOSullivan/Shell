@@ -5,6 +5,7 @@
 #include <unistd.h>    // Used by fork
 #include <sys/wait.h>  // waitpid and its macros
 #include <signal.h>    // Used by backtracer
+#include <dirent.h>    // Used to test if dir exists
 #include <execinfo.h>  // Used by backtracer
 #include "config.h"    // CSH config values
 #include "builtins.h"  // Builtin commands
@@ -256,13 +257,22 @@ int main(int argc, char **argv) {
     // Get files required by csh
     char* HOME = getenv("HOME");
 
-    char* alias_location = malloc(strlen(HOME) + 1 + 20);
-    strcpy(alias_location, HOME);
-    strcat(alias_location, "/.config/csh/aliases");
+    char* config_location = malloc(strlen(HOME) + 1 + strlen(CONFIG_LOC));
+    strcpy(config_location, HOME);
+    strcat(config_location, CONFIG_LOC);
 
-    char* hist_location = malloc(strlen(HOME) + 1 + 17);
-    strcpy(hist_location, HOME);
-    strcat(hist_location, "/.config/csh/hist");
+    // Check if dir exists
+    if (!opendir(config_location)) {
+        printf("** CONFIG DIRECTORY DOES NOT EXIST **\n");
+    }
+
+    char* alias_location = malloc(strlen(config_location) + 9);
+    strcpy(alias_location, config_location);
+    strcat(alias_location, "/aliases");
+
+    char* hist_location = malloc(strlen(config_location) + 6);
+    strcpy(hist_location, config_location);
+    strcat(hist_location, "/hist");
 
     while (running) {
         // Format the current working directory
